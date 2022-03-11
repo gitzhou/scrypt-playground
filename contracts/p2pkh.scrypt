@@ -1,0 +1,9 @@
+contract P2PKH {
+
+    PubKeyHash pkh;
+
+    public function unlock(Sig sig, PubKey pk) {
+        require(hash160(pk) == this.pkh);
+        require(checkSig(sig, pk));
+    }
+}

@@ -1,0 +1,33 @@
+contract CounterV3 {
+
+    @state
+    int counter;
+
+    public function increase(SigHashPreimage txPreimage, int outputAmount) {
+        require(Tx.checkPreimage(txPreimage));
+
+        this.counter++;
+
+        bytes expectedOutputScript = this.getStateScript();
+        bytes expectedOutput = Utils.buildOutput(expectedOutputScript, outputAmount);
+        require(SigHash.hashOutputs(txPreimage) == hash256(expectedOutput));
+    }
+
+    public function fund(SigHashPreimage txPreimage, int fundAmount, PubKeyHash changePkh, int changeAmount) {
+        require(Tx.checkPreimage(txPreimage));
+        // !!! ensure counter output has more satoshi than before !!!
+        // otherwise, it would be possible to "steal" money from the contract
+        require(fundAmount > 0);
+
+        this.counter++;
+
+        // output #0 is the new counter
+        int counterAmount = SigHash.value(txPreimage) + fundAmount;
+        bytes counterOutput = Utils.buildOutput(this.getStateScript(), counterAmount);
+        // output #1 is the p2pkh change
+        bytes changeOutput = Utils.buildOutput(Utils.buildPublicKeyHashScript(changePkh), changeAmount);
+        // expect current transaction has 2 outputs
+        bytes expectedOutputs = counterOutput + changeOutput;
+        require(SigHash.hashOutputs(txPreimage) == hash256(expectedOutputs));
+    }
+}

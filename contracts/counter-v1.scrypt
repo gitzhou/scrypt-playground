@@ -1,0 +1,39 @@
+contract CounterV1 {
+
+    static const int dataLen = 1;
+
+    public function unlock(SigHashPreimage txPreimage, int outputAmount) {
+        // 1. verify preimage
+        //
+        require(Tx.checkPreimage(txPreimage));
+
+        // 2. get logic and data from locking script
+        // +------------+-----------+
+        // | logic part | data part |
+        // +------------+-----------+
+        //
+        // raw locking script from preimage
+        bytes scriptCode = SigHash.scriptCode(txPreimage);
+        int scriptLen = len(scriptCode);
+        // the last 1 byte is data
+        bytes logicPart = scriptCode[: scriptLen - dataLen];
+        bytes dataPart = scriptCode[scriptLen - dataLen :];
+        int counter = unpack(dataPart);
+
+        // 3. process data
+        //
+        counter++;
+
+        // 4. verify transaction output
+        //
+        // build the locking script for expected output
+        // +-----------------+---------------+
+        // | SAME logic part | NEW data part |
+        // +-----------------+---------------+
+        bytes expectedOutputScript = logicPart + num2bin(counter, dataLen);
+        // build expected output
+        bytes expectedOutput = Utils.buildOutput(expectedOutputScript, outputAmount);
+        // verify the current transaction output is the same as the expected output
+        require(SigHash.hashOutputs(txPreimage) == hash256(expectedOutput));
+    }
+}

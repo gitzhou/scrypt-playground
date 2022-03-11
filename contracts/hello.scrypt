@@ -1,0 +1,14 @@
+contract Hello {
+
+    int a;
+    int b;
+
+    public function foo(int c) {
+        require(c == this.a + this.b);
+    }
+
+    public function bar(int c, int d) {
+        require(c == this.a - this.b);
+        require(d == this.a * this.b);
+    }
+}

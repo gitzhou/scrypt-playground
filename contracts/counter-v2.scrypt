@@ -1,0 +1,27 @@
+contract CounterV2 {
+
+    @state
+    int counter;
+
+    public function unlock(SigHashPreimage txPreimage, int outputAmount) {
+        // 1. verify preimage
+        //
+        require(Tx.checkPreimage(txPreimage));
+
+        // !!! no need to resolve locking script anymore !!!
+        //
+
+        // 2. process data directly
+        //
+        this.counter++;
+
+        // 3. verify transaction output
+        //
+        // !!! build the locking script for expected output with one-line code !!!
+        bytes expectedOutputScript = this.getStateScript();
+        // build expected output
+        bytes expectedOutput = Utils.buildOutput(expectedOutputScript, outputAmount);
+        // verify the current transaction output is the same as the expected output
+        require(SigHash.hashOutputs(txPreimage) == hash256(expectedOutput));
+    }
+}

@@ -1,0 +1,25 @@
+contract CounterV5 {
+
+    @state
+    int counter;
+
+    PubKeyHash creatorPkh;
+
+    public function increase(SigHashPreimage txPreimage) {
+        SigHashType sigHashType = SigHash.SINGLE | SigHash.ANYONECANPAY | SigHash.FORKID;
+        require(Tx.checkPreimageSigHashType(txPreimage, sigHashType));
+
+        this.counter++;
+
+        bytes expectedOutputScript = this.getStateScript();
+        int outputAmount = SigHash.value(txPreimage); // the new counter has the same satoshi as the input
+        bytes expectedOutput = Utils.buildOutput(expectedOutputScript, outputAmount);
+        require(SigHash.hashOutputs(txPreimage) == hash256(expectedOutput));
+    }
+
+    public function destroy(Sig sig, PubKey pk) {
+        // only the creator can destroy
+        require(hash160(pk) == this.creatorPkh);
+        require(checkSig(sig, pk));
+    }
+}
