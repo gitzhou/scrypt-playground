@@ -1,0 +1,17 @@
+import "hash-puzzle-sha256.scrypt";
+import "p2pkh.scrypt";
+
+contract HashPuzzleP2PKH {
+
+    Sha256 hash;
+    PubKeyHash pkh;
+
+    public function unlock(bytes message, Sig sig, PubKey pk) {
+        // initialize hash puzzle
+        HashPuzzleSha256 hashPuzzle = new HashPuzzleSha256(this.hash);
+        // initialize p2pkh
+        P2PKH p2pkh = new P2PKH(this.pkh);
+        // require unlock both contracts
+        require(hashPuzzle.unlock(message) && p2pkh.unlock(sig, pk));
+    }
+}
