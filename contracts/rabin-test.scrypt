@@ -1,0 +1,8 @@
+import "rabin.scrypt";
+
+contract RabinTest {
+
+    public function unlock(bytes message, RabinSig sig, RabinPubKey pk) {
+        require(RabinUtils.checkSig(message, sig, pk));
+    }
+}

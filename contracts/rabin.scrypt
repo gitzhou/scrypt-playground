@@ -1,0 +1,27 @@
+// https://aaron67.cc/2021/07/10/rabin-signatures/
+
+type RabinPubKey = int;
+
+struct RabinSig {
+    // s
+    int s;
+    // u
+    bytes padding;
+}
+
+library RabinUtils {
+
+    static function checkSig(bytes message, RabinSig sig, RabinPubKey pk) : bool {
+        int h = Utils.fromLEUnsigned(hash(message + sig.padding));
+        return (sig.s * sig.s) % pk == h % pk;
+    }
+
+    static function hash(bytes x) : bytes {
+        // expand into 3072 bits hash
+        bytes hx = sha256(x);
+        loop (11) {
+            hx += sha256(hx);
+        }
+        return hx;
+    }
+}
