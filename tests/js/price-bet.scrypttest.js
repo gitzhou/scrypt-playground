@@ -1,9 +1,12 @@
 const { expect } = require('chai');
-const { buildContractClass, bsv, Bytes, getPreimage, SigHashPreimage, toHex, PubKeyHash } = require('scryptlib');
+const { buildContractClass, buildTypeClasses, bsv, Bytes, getPreimage, SigHashPreimage, toHex, PubKeyHash } = require('scryptlib');
 const { compileContract, inputIndex, inputSatoshis, newTx } = require('../../helper');
 const axios = require('axios');
 
 const witnessServer = 'https://witnessonchain.com/v1'
+
+const PriceBet = buildContractClass(compileContract('price-bet.scrypt'))
+const { RabinSig, RabinPubKey } = buildTypeClasses(PriceBet);
 
 describe('Test PriceBet sCrypt contract with WitnessOnChain.com Service', () => {
 
@@ -12,7 +15,7 @@ describe('Test PriceBet sCrypt contract with WitnessOnChain.com Service', () => 
 
     before(async () => {
         const infoResponse = await axios.get(`${witnessServer}/info`)
-        rabinPubKey = infoResponse.data.public_key.rabin
+        rabinPubKey = '0x' + Buffer.from(infoResponse.data.public_key.rabin, 'hex').reverse().toString('hex')
     })
 
     it('should return true', async () => {
@@ -32,13 +35,12 @@ describe('Test PriceBet sCrypt contract with WitnessOnChain.com Service', () => 
         symbolWithPaddingBuffer.write(symbol)
 
         // new contract
-        const PriceBet = buildContractClass(compileContract('price-bet.scrypt'))
         const priceBet = new PriceBet(
             targetPrice,
             decimal,
             new Bytes(toHex(symbolWithPaddingBuffer)),
             timestamp,
-            new Bytes(rabinPubKey),
+            new RabinPubKey(rabinPubKey),
             new PubKeyHash(toHex(alicePkh)),
             new PubKeyHash(toHex(bobPkh))
         )
@@ -56,7 +58,7 @@ describe('Test PriceBet sCrypt contract with WitnessOnChain.com Service', () => 
 
         // prepare unlock
         const tx = newTx()
-        const outputAmount = 98000
+        const outputAmount = 90000
         tx.addOutput(new bsv.Transaction.Output({
             script: bsv.Script.buildPublicKeyHashOut(winnerPubKey),
             satoshis: outputAmount
@@ -65,11 +67,12 @@ describe('Test PriceBet sCrypt contract with WitnessOnChain.com Service', () => 
 
         // verify
         const context = { tx, inputIndex, inputSatoshis }
+        const s = '0x' + Buffer.from(ratesData.signatures.rabin.signature, 'hex').reverse().toString('hex')
+        const sig = new RabinSig({ s: s, padding: new Bytes(ratesData.signatures.rabin.padding) })
         result = priceBet.unlock(
             new SigHashPreimage(toHex(preimage)),
-            new Bytes(ratesData.signatures.rabin.signature),
             new Bytes(ratesData.digest),
-            new Bytes(ratesData.signatures.rabin.padding),
+            sig,
             outputAmount
         ).verify(context)
 

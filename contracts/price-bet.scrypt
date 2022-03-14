@@ -1,31 +1,21 @@
+import "rabin.scrypt";
+
 contract PriceBet {
 
     int targetPrice;
     int decimal;
     bytes symbol;
     int timestamp;
-    bytes rabinPubKey;
+    RabinPubKey rabinPubKey;
     PubKeyHash alicePkh;
     PubKeyHash bobPkh;
 
-    function hashToInt(bytes x) : int {
-        // expand to 3072 bits
-        bytes hx = sha256(x);
-        loop (11) {
-            hx += sha256(hx);
-        }
-        return Utils.fromLEUnsigned(hx);
-    }
-
-    public function unlock(SigHashPreimage txPreimage, bytes sig, bytes msg, bytes padding, int outputAmount) {
+    public function unlock(SigHashPreimage txPreimage, bytes msg, RabinSig sig, int outputAmount) {
         // check preimage
         require(Tx.checkPreimage(txPreimage));
 
         // verify rabin signature
-        int h = this.hashToInt(msg + padding);
-        int s = Utils.fromLEUnsigned(sig);
-        int n = Utils.fromLEUnsigned(this.rabinPubKey);
-        require((s * s) % n == h % n);
+        require(RabinUtils.checkSig(msg, sig, this.rabinPubKey));
 
         // decode data
         // 4 bytes timestamp little endian + 8 bytes rate little endian + 1 byte decimal + 16 bytes symbol
