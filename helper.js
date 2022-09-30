@@ -49,7 +49,7 @@ function reverseEndian(hexStr) {
 async function sendTx(tx) {
   const hex = tx.toString();
 
-  if (!tx.checkFeeRate(500)) {
+  if (!tx.checkFeeRate(50)) {
     throw new Error(`checkFeeRate fail, transaction fee is too low`)
   }
 
